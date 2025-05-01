@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { message } from 'ant-design-vue'
-import * as authApi from '@/api/auth'
-import type { UserInfo as UserInfoType } from '@/types'
+import * as userApi from '@/api/user'
+import type { UserInfo as UserInfoType, UserUpdateParams, ChangePasswordParams } from '@/types/user'
 
 export const useUserStore = defineStore('user', () => {
   // 状态
@@ -13,9 +13,9 @@ export const useUserStore = defineStore('user', () => {
   // 获取用户信息
   const getUserInfo = async () => {
     try {
-      const response = await authApi.getUserInfo()
+      const response = await userApi.getUserInfo()
       if (response.code === 200 && response.data) {
-        userInfo.value = response.data
+        userInfo.value = response.data as UserInfoType
         return response.data
       }
       return null
@@ -28,9 +28,10 @@ export const useUserStore = defineStore('user', () => {
   // 登录
   const login = async (credentials: { username: string; password: string }) => {
     try {
-      const response = await authApi.login(credentials.username, credentials.password)
+      const response = await userApi.login(credentials.username, credentials.password)
 
-      if (response.code === 200 && response.data) {
+      // 检查响应状态
+      if (response.code === 200 && response.data && response.data.access_token) {
         const tokenData = response.data
         token.value = tokenData.access_token
         localStorage.setItem('token', tokenData.access_token)
@@ -40,10 +41,14 @@ export const useUserStore = defineStore('user', () => {
         await getUserInfo()
         message.success('登录成功')
         return true
+      } else {
+        // 处理业务逻辑错误
+        message.error(response.message || '登录失败，请检查用户名和密码')
+        return false
       }
-      return false
     } catch (error) {
       console.error('登录失败:', error)
+      // 错误已被响应拦截器处理，这里不需要再显示
       return false
     }
   }
@@ -53,7 +58,7 @@ export const useUserStore = defineStore('user', () => {
     if (!skipApi) {
       try {
         // 调用登出API
-        await authApi.logout()
+        await userApi.logout()
       } catch (error) {
         console.error('登出请求失败:', error)
       }
@@ -67,13 +72,13 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 更新用户信息
-  const updateUserInfo = async (updates: Partial<UserInfoType>) => {
+  const updateUserInfo = async (updates: UserUpdateParams) => {
     try {
-      // 假设当前用户可以更新自己的信息
+      // 确保用户已登录并有ID
       if (userInfo.value) {
-        const response = await authApi.updateUser(userInfo.value.id, updates)
+        const response = await userApi.updateUser(userInfo.value.id, updates)
         if (response.code === 200 && response.data) {
-          userInfo.value = response.data
+          userInfo.value = response.data as UserInfoType
           message.success('个人信息更新成功')
           return true
         }
@@ -86,13 +91,9 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 更新密码
-  const updatePassword = async (data: {
-    current_password: string
-    new_password: string
-    confirm_password: string
-  }) => {
+  const updatePassword = async (data: ChangePasswordParams) => {
     try {
-      const response = await authApi.changePassword(data)
+      const response = await userApi.changePassword(data)
       if (response.code === 200) {
         message.success('密码更新成功')
         return true
@@ -107,7 +108,7 @@ export const useUserStore = defineStore('user', () => {
   // 注册用户
   const register = async (userData: { username: string; password: string }) => {
     try {
-      const response = await authApi.register({
+      const response = await userApi.register({
         username: userData.username,
         password: userData.password,
       })

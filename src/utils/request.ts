@@ -1,5 +1,10 @@
 import axios from 'axios'
-import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosRequestConfig } from 'axios'
+import type {
+  AxiosInstance,
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+  AxiosRequestConfig,
+} from 'axios'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
 import { message } from 'ant-design-vue'
@@ -11,8 +16,8 @@ const instance: AxiosInstance = axios.create({
   baseURL,
   timeout: 3000000,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 })
 
 // 请求拦截器
@@ -31,7 +36,7 @@ instance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error)
-  }
+  },
 )
 
 // 响应拦截器
@@ -40,14 +45,16 @@ instance.interceptors.response.use(
     const res = response.data
 
     // 如果是文件下载响应，直接返回
-    if (response.headers['content-type']?.includes('application/octet-stream') ||
-        response.headers['content-type']?.includes('application/pdf') ||
-        response.headers['content-type']?.includes('image/')) {
+    if (
+      response.headers['content-type']?.includes('application/octet-stream') ||
+      response.headers['content-type']?.includes('application/pdf') ||
+      response.headers['content-type']?.includes('image/')
+    ) {
       return response
     }
 
     // 处理业务逻辑成功
-    if (res.code === 0 || res.success) {
+    if (res.code === 0 || res.code === 200 || res.success) {
       return res
     }
     return res
@@ -62,7 +69,10 @@ instance.interceptors.response.use(
       // 处理401未授权错误（token无效或过期）
       if (status === 401) {
         // 只有在不是登出请求且不是登录请求时才处理401
-        if (!error.config.url?.includes('/auth/logout') && !error.config.url?.includes('/auth/login')) {
+        if (
+          !error.config.url?.includes('/auth/logout') &&
+          !error.config.url?.includes('/auth/login')
+        ) {
           message.error('登录已过期，请重新登录')
           userStore.logout(true) // 添加参数以跳过API调用
           router.push('/auth/login')
@@ -94,7 +104,7 @@ instance.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  }
+  },
 )
 
 // 封装请求方法
@@ -112,7 +122,7 @@ export const request = {
     return instance.delete(url, config)
   },
   // 暴露axios实例，方便扩展
-  defaults: instance.defaults
+  defaults: instance.defaults,
 }
 
 export default request

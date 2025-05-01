@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { message } from 'ant-design-vue'
+import { UserType } from '@/types/user'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -17,38 +18,83 @@ const router = createRouter({
           path: 'login',
           name: 'Login',
           component: () => import('@/views/Login.vue'),
-          meta: { requiresAuth: false },
+          meta: { requiresAuth: false, title: '登录' },
         },
         {
           path: 'register',
           name: 'Register',
           component: () => import('@/views/Register.vue'),
-          meta: { requiresAuth: false },
+          meta: { requiresAuth: false, title: '注册' },
         },
       ],
     },
     {
-      path: '/dashboard',
-      name: 'Dashboard',
-      component: () => import('@/views/Dashboard.vue'),
+      path: '/',
+      component: () => import('@/layouts/MainLayout.vue'),
       meta: { requiresAuth: true },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'Dashboard',
+          component: () => import('@/views/Dashboard.vue'),
+          meta: { title: '价格概览' },
+        },
+        {
+          path: 'vegetables',
+          name: 'Vegetables',
+          component: () => import('@/views/VegetablesView.vue'),
+          meta: { title: '蔬菜列表' },
+        },
+        {
+          path: 'vegetables/:id',
+          name: 'VegetableDetail',
+          component: () => import('@/views/VegetableDetail.vue'),
+          meta: { title: '蔬菜详情' },
+        },
+      ],
     },
     {
-      path: '/admin/dashboard',
-      name: 'AdminDashboard',
-      component: () => import('@/views/admin/Dashboard.vue'),
+      path: '/admin',
+      component: () => import('@/layouts/MainLayout.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
-    },
-    {
-      path: '/profile',
-      name: 'Profile',
-      component: () => import('@/views/Profile.vue'),
-      meta: { requiresAuth: true },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'AdminDashboard',
+          component: () => import('@/views/Dashboard.vue'),
+          meta: { title: '管理员仪表盘', requiresAdmin: true },
+        },
+        {
+          path: 'users',
+          name: 'UserManagement',
+          component: () => import('@/views/UserManagement.vue'),
+          meta: { title: '用户管理', requiresAdmin: true },
+        },
+        {
+          path: 'settings',
+          name: 'SystemSettings',
+          component: () => import('@/views/SystemSettings.vue'),
+          meta: { title: '系统设置', requiresAdmin: true },
+        },
+        {
+          path: 'create-admin',
+          name: 'AdminUserCreate',
+          component: () => import('@/views/AdminUserCreate.vue'),
+          meta: { title: '创建管理员', requiresAdmin: true },
+        },
+        {
+          path: 'crawler',
+          name: 'CrawlerManagement',
+          component: () => import('@/views/CrawlerManagement.vue'),
+          meta: { title: '爬虫管理', requiresAdmin: true },
+        },
+      ],
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'NotFound',
       component: () => import('@/views/NotFound.vue'),
+      meta: { title: '页面未找到' },
     },
   ],
 })
@@ -57,14 +103,14 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   const isAuthenticated = userStore.isLoggedIn
-  const requiresAuth = to.meta.requiresAuth as boolean
-  const requiresAdmin = to.meta.requiresAdmin as boolean
+  const requiresAuth = to.meta.requiresAuth !== false // 默认需要认证
+  const requiresAdmin = to.meta.requiresAdmin === true
 
   // 对于不需要认证的路由，直接通过
   if (!requiresAuth) {
     // 已登录用户尝试访问登录/注册页，重定向到首页
     if ((to.path === '/auth/login' || to.path === '/auth/register') && isAuthenticated) {
-      return next({ name: 'Dashboard' })
+      return next({ path: '/dashboard' })
     }
     return next()
   }
@@ -98,9 +144,9 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // 需要管理员权限但不是管理员
-  if (requiresAdmin && userStore.userInfo?.user_type !== 'admin') {
+  if (requiresAdmin && userStore.userInfo?.user_type !== UserType.ADMIN) {
     message.error('无权访问管理员页面')
-    return next({ name: 'Dashboard' })
+    return next({ path: '/dashboard' })
   }
 
   // 其他情况正常通过
