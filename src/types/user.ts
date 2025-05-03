@@ -8,6 +8,7 @@ export interface UserInfo {
   username: string
   user_type: string
   created_at: string
+  is_active: boolean
 }
 
 export interface UserCreateParams {
@@ -40,3 +41,15 @@ export interface ChangePasswordParams {
   new_password: string
   confirm_password: string
 }
+
+// 分页响应接口
+export interface PaginatedData<T> {
+  items: T[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
+// 用户分页数据
+export type PaginatedUsers = PaginatedData<UserInfo>

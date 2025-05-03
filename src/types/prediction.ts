@@ -94,7 +94,45 @@ export interface TrainingConfig {
   custom_params?: Record<string, any>
 }
 
+// 模型评估
+export interface ModelEvaluation {
+  id: number
+  model_id: number
+  algorithm: string
+  mean_absolute_error: number
+  mean_squared_error: number
+  r_squared: number
+  prediction_accuracy: number
+  evaluation_date: string
+  vegetable_id?: number
+  product_name?: string
+  training_status?: string
+  training_date?: string
+}
+
+// 模型评估过滤条件
+export interface ModelEvaluationFilter {
+  algorithm?: string
+  vegetable_id?: number
+  product_name?: string
+  min_accuracy?: number
+  max_error?: number
+  page?: number
+  limit?: number
+}
+
+// 分页响应
+export interface PaginatedData<T> {
+  items: T[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
 // API响应类型
 export type PredictionResultResponse = ApiResponse<PredictionResult>
 export type ModelTrainingHistoryResponse = ApiResponse<ModelTrainingResponse[]>
 export type BestPurchaseDayResponse = ApiResponse<BestPurchaseDay>
+export type ModelEvaluationListResponse = ApiResponse<PaginatedData<ModelEvaluation>>
+export type ModelEvaluationDetailResponse = ApiResponse<ModelEvaluation>

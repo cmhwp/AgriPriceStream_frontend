@@ -37,13 +37,19 @@ const router = createRouter({
           path: 'dashboard',
           name: 'Dashboard',
           component: () => import('@/views/Dashboard.vue'),
-          meta: { title: '价格概览' },
+          meta: { title: '数据总览' },
         },
         {
           path: 'vegetables',
           name: 'Vegetables',
           component: () => import('@/views/VegetablesView.vue'),
           meta: { title: '蔬菜列表' },
+        },
+        {
+          path: 'vegetables/create',
+          name: 'CreateVegetable',
+          component: () => import('@/views/CreateVegetable.vue'),
+          meta: { title: '添加蔬菜', requiresAdmin: true },
         },
         {
           path: 'vegetables/:id',
@@ -54,14 +60,14 @@ const router = createRouter({
         {
           path: 'predictions',
           name: 'PricePrediction',
-          component: () => import('@/views/PricePrediction.vue'),
+          component: () => import('@/views/PredictionsView.vue'),
           meta: { title: '价格预测' },
         },
         {
           path: 'profile',
           name: 'profile',
-          component: ()=>import('@/views/Profile.vue')
-        }
+          component: () => import('@/views/Profile.vue'),
+        },
       ],
     },
     {
@@ -78,7 +84,7 @@ const router = createRouter({
         {
           path: 'users',
           name: 'UserManagement',
-          component: () => import('@/views/UserManagement.vue'),
+          component: () => import('@/views/admin/UserManagement.vue'),
           meta: { title: '用户管理', requiresAdmin: true },
         },
         {
@@ -94,10 +100,10 @@ const router = createRouter({
           meta: { title: '模型训练管理', requiresAdmin: true },
         },
         {
-          path: 'settings',
-          name: 'SystemSettings',
-          component: () => import('@/views/SystemSettings.vue'),
-          meta: { title: '系统设置', requiresAdmin: true },
+          path: 'model-evaluations',
+          name: 'ModelEvaluations',
+          component: () => import('@/views/admin/ModelEvaluations.vue'),
+          meta: { title: '模型评估记录', requiresAdmin: true },
         },
         {
           path: 'create-admin',
@@ -110,6 +116,11 @@ const router = createRouter({
           name: 'CrawlerManagement',
           component: () => import('@/views/CrawlerManagement.vue'),
           meta: { title: '爬虫管理', requiresAdmin: true },
+        },
+        {
+          path: 'vegetables/edit/:id',
+          name: 'AdminEditVegetable',
+          component: () => import('@/views/EditVegetable.vue'),
         },
       ],
     },

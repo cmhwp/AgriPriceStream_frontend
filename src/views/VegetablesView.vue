@@ -3,20 +3,16 @@
     <a-card class="search-card" title="蔬菜数据查询" :bordered="false">
       <a-form layout="inline" :model="searchForm">
         <a-form-item label="蔬菜名称">
-          <a-input v-model:value="searchForm.name" placeholder="输入名称" allow-clear />
-        </a-form-item>
-        <a-form-item label="蔬菜种类">
           <a-select
-            v-model:value="searchForm.kind"
-            placeholder="选择种类"
-            style="width: 180px"
-            allow-clear
-            :loading="kindsLoading"
-          >
-            <a-select-option v-for="kind in kinds" :key="kind" :value="kind">
-              {{ kind }}
-            </a-select-option>
-          </a-select>
+            v-model:value="searchForm.name"
+            placeholder="请选择蔬菜"
+            style="width: 200px"
+            :options="vegetableOptions"
+            show-search
+            :filter-option="filterOption"
+            :virtual="false"
+            :max-tag-count="10"
+          />
         </a-form-item>
         <a-form-item label="价格范围">
           <a-space>
@@ -76,6 +72,19 @@
         @change="handleTableChange"
       >
         <template #bodyCell="{ column, record }">
+          <!-- 种类信息 -->
+          <template v-if="column.dataIndex === 'kind'">
+            <a-tag v-if="record.kind === '1'" color="green">蔬菜</a-tag>
+            <span v-else>{{ record.kind || '-' }}</span>
+          </template>
+
+          <!-- 计价单位 -->
+          <template v-if="column.dataIndex === 'weight'">
+            <span v-if="record.weight === 0">元/公斤</span>
+            <span v-else-if="record.weight">{{ record.weight }} kg</span>
+            <span v-else>-</span>
+          </template>
+
           <!-- 价格信息 -->
           <template v-if="column.dataIndex === 'price'">
             <div>
@@ -147,7 +156,7 @@ import {
   getVegetablesByPriceRange,
 } from '@/api/vegetable'
 import type { VegetableResponse } from '@/types/vegetable'
-
+import { getVegetableOptions } from '@/api/vegetable'
 // 路由
 const router = useRouter()
 
@@ -161,15 +170,17 @@ const loading = ref(false)
 const kinds = ref<string[]>([])
 const kindsLoading = ref(false)
 const usesPriceFilter = ref(false)
-
+const vegetableOptions = ref<{ label: string; value: number }[]>([])
 // 搜索表单
 const searchForm = reactive({
   name: '',
-  kind: undefined,
   min_price: undefined,
   max_price: undefined,
 })
-
+// 过滤器 - 搜索蔬菜
+const filterOption = (input: string, option: any) => {
+  return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
+}
 // 分页
 const pagination = reactive({
   current: 1,
@@ -213,7 +224,7 @@ const columns = [
     width: 180,
   },
   {
-    title: '重量(kg)',
+    title: '计价单位',
     dataIndex: 'weight',
     width: 120,
   },
@@ -256,7 +267,6 @@ const fetchData = async () => {
         page: pagination.current,
         page_size: pagination.pageSize,
         name: searchForm.name || undefined,
-        kind: searchForm.kind || undefined
       })
     }
     console.log(res)
@@ -275,24 +285,6 @@ const fetchData = async () => {
   }
 }
 
-// 获取蔬菜种类
-const fetchVegetableKinds = async () => {
-  kindsLoading.value = true
-  try {
-    const res = await getVegetableKinds()
-    if (res.code === 0 || res.code === 200) {
-      kinds.value = res.data
-    } else {
-      message.error(res.msg || '获取蔬菜种类失败')
-    }
-  } catch (error) {
-    console.error('获取蔬菜种类失败:', error)
-    message.error('获取蔬菜种类失败')
-  } finally {
-    kindsLoading.value = false
-  }
-}
-
 // 表格分页、排序、过滤器变化
 const handleTableChange = (pag: any) => {
   pagination.current = pag.current
@@ -305,11 +297,29 @@ const handleSearch = () => {
   pagination.current = 1 // 重置到第一页
   fetchData()
 }
+// 获取蔬菜列表
+const fetchVegetables = async () => {
+  try {
+    const res = await getVegetableOptions()
+    if ((res.code === 0 || res.code === 200) && res.data) {
+      // 按名称排序
+      const mappedOptions = res.data
+        .map((item: any) => ({
+          label: item.name,
+          value: item.id,
+        }))
+        .sort((a: any, b: any) => a.label.localeCompare(b.label, 'zh-CN'))
 
+      vegetableOptions.value = mappedOptions
+    }
+  } catch (error) {
+    console.error('获取蔬菜选项失败:', error)
+    message.error('获取蔬菜选项失败')
+  }
+}
 // 重置搜索条件
 const resetSearch = () => {
   searchForm.name = ''
-  searchForm.kind = undefined
   searchForm.min_price = undefined
   searchForm.max_price = undefined
   pagination.current = 1
@@ -340,7 +350,7 @@ const handleViewVegetable = (record: VegetableResponse) => {
 
 // 编辑蔬菜
 const handleEditVegetable = (record: VegetableResponse) => {
-  router.push(`/vegetables/edit/${record.id}`)
+  router.push(`/admin/vegetables/edit/${record.id}`)
 }
 
 // 添加蔬菜
@@ -367,7 +377,7 @@ const handleDeleteVegetable = async (record: VegetableResponse) => {
 // 组件挂载时加载数据
 onMounted(() => {
   fetchData()
-  fetchVegetableKinds()
+  fetchVegetables()
 })
 </script>
 

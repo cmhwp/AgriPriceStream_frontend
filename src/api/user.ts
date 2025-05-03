@@ -6,6 +6,7 @@ import type {
   UserAdminUpdateParams,
   TokenResponse,
   ChangePasswordParams,
+  PaginatedUsers,
 } from '@/types/user'
 
 // API 响应类型
@@ -58,9 +59,11 @@ export const logout = (): Promise<ApiResponse> => {
 
 // 管理员：获取所有用户
 export const getAllUsers = (params?: {
-  skip?: number
-  limit?: number
-}): Promise<ApiResponse<UserInfo[]>> => {
+  page?: number
+  size?: number
+  username?: string
+  user_type?: string
+}): Promise<ApiResponse<PaginatedUsers>> => {
   return request.get('/users', { params })
 }
 
@@ -75,4 +78,14 @@ export const updateUserAdmin = (
   data: UserAdminUpdateParams,
 ): Promise<ApiResponse<UserInfo>> => {
   return request.put(`/users/${userId}/admin`, data)
+}
+
+// 管理员：封禁/解封用户
+export const toggleUserStatus = (
+  userId: number,
+  isActive: boolean
+): Promise<ApiResponse<UserInfo>> => {
+  return request.put(`/users/${userId}/status`, null, {
+    params: { is_active: isActive }
+  })
 }

@@ -10,7 +10,7 @@
           :count="dashboardData?.notifications_count || 0"
           :dot="(dashboardData?.notifications_count || 0) > 0"
         >
-          <a-button type="primary" shape="circle" icon="bell" />
+          <a-button type="primary" icon="bell" @click="refreshDashboard">刷新</a-button>
         </a-badge>
       </template>
     </a-page-header>
@@ -22,17 +22,62 @@
       </div>
 
       <div v-else-if="dashboardData" class="dashboard-content" :key="refreshKey">
+        <!-- 重要信息概览 -->
+        <a-divider orientation="left"><strong>重要信息概览</strong></a-divider>
+
         <!-- 用户仪表盘部分 -->
-        <a-row :gutter="16">
-          <!-- 统计卡片 -->
-          <a-col :span="8">
-            <a-card :bordered="false" title="订阅的蔬菜" class="stat-card">
-              <p class="large-number">{{ dashboardData.subscribed_vegetables?.length || 0 }}</p>
-              <p class="stat-description">订阅蔬菜总数</p>
+        <a-row :gutter="[16, 16]">
+          <!-- 最低价蔬菜卡片 - 突出显示 -->
+          <a-col
+            :xs="24"
+            :sm="24"
+            :md="isAdmin ? 6 : 8"
+            :lg="isAdmin ? 6 : 8"
+            :xl="isAdmin ? 6 : 8"
+          >
+            <a-card
+              :bordered="false"
+              title="今日最低价蔬菜"
+              class="stat-card highlight-card"
+              v-if="dashboardData.lowest_priced_vegetable?.product_name"
+            >
+              <div class="stat-vegetable">
+                <p class="vegetable-name">
+                  {{ dashboardData.lowest_priced_vegetable.product_name }}
+                </p>
+                <p class="vegetable-price">
+                  {{ dashboardData.lowest_priced_vegetable.price?.toFixed(2) }} 元/kg
+                </p>
+                <a-tag color="green">性价比最高</a-tag>
+                <div
+                  class="vegetable-action"
+                  v-if="dashboardData.lowest_priced_vegetable.vegetable_id"
+                >
+                  <a-button
+                    type="link"
+                    @click="
+                      navigateToVegetableDetail(dashboardData.lowest_priced_vegetable.vegetable_id)
+                    "
+                  >
+                    查看详情
+                  </a-button>
+                </div>
+              </div>
+            </a-card>
+            <a-card :bordered="false" title="今日最低价蔬菜" class="stat-card" v-else>
+              <p class="large-number">--</p>
+              <p class="stat-description">暂无数据</p>
             </a-card>
           </a-col>
 
-          <a-col :span="8">
+          <!-- 蔬菜数据总数 -->
+          <a-col
+            :xs="24"
+            :sm="12"
+            :md="isAdmin ? 6 : 8"
+            :lg="isAdmin ? 6 : 8"
+            :xl="isAdmin ? 6 : 8"
+          >
             <a-card :bordered="false" title="蔬菜数据总数" class="stat-card">
               <p class="large-number">
                 {{ dashboardData.vegetable_count_by_type?.[0]?.count || 0 }}
@@ -41,163 +86,152 @@
             </a-card>
           </a-col>
 
-          <a-col :span="8">
+          <!-- 产地数量 -->
+          <a-col
+            :xs="24"
+            :sm="12"
+            :md="isAdmin ? 6 : 8"
+            :lg="isAdmin ? 6 : 8"
+            :xl="isAdmin ? 6 : 8"
+          >
             <a-card :bordered="false" title="产地数量" class="stat-card">
               <p class="large-number">{{ dashboardData.provenances?.length || 0 }}</p>
               <p class="stat-description">蔬菜产地统计</p>
             </a-card>
           </a-col>
+
+          <!-- 管理员总用户数卡片 - 只在管理员视图中显示 -->
+          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="6" v-if="isAdmin && adminData">
+            <a-card :bordered="false" title="总用户数" class="stat-card admin-card">
+              <p class="large-number">{{ adminData.total_users || 0 }}</p>
+              <p class="stat-description">系统注册用户数量</p>
+            </a-card>
+          </a-col>
         </a-row>
 
-        <!-- 蔬菜分布 -->
-        <a-row :gutter="16" class="chart-row">
-          <a-col :span="12">
-            <a-card :bordered="false" title="7天价格分布">
+        <!-- 图表区域 -->
+        <a-divider orientation="left"><strong>数据分析</strong></a-divider>
+
+        <!-- 蔬菜分布和产地分布 -->
+        <a-row :gutter="[16, 16]" class="chart-row">
+          <a-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+            <a-card :bordered="false" title="7天价格分布" class="chart-card">
               <div ref="vegetableTypeChart" class="chart-container"></div>
             </a-card>
           </a-col>
 
           <!-- 产地分布 -->
-          <a-col :span="12">
-            <a-card :bordered="false" title="产地分布">
+          <a-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+            <a-card :bordered="false" title="产地分布" class="chart-card">
               <div ref="provenanceChart" class="chart-container"></div>
             </a-card>
           </a-col>
         </a-row>
 
-        <!-- 最近价格更新 -->
-        <a-row :gutter="16" class="chart-row">
-          <a-col :span="24">
-            <a-card :bordered="false" title="最近价格更新">
-              <a-table
-                :dataSource="dashboardData.recent_price_updates || []"
-                :columns="priceUpdateColumns"
-                :pagination="{ pageSize: 5 }"
-                rowKey="vegetable_id"
-              />
-            </a-card>
-          </a-col>
-        </a-row>
-
         <!-- 价格分析 -->
-        <a-row :gutter="16" class="chart-row" v-if="dashboardData.price_analytics">
+        <a-row :gutter="[16, 16]" class="chart-row" v-if="dashboardData.price_analytics">
           <a-col :span="24">
-            <a-card :bordered="false" title="价格分析">
+            <a-card :bordered="false" title="价格分析" class="analysis-card">
               <div class="price-analytics">
-                <a-descriptions bordered>
-                  <a-descriptions-item label="平均价格">
-                    {{ dashboardData.price_analytics.average_price.toFixed(2) }} 元/kg
-                  </a-descriptions-item>
-                  <a-descriptions-item label="最高价格">
-                    {{ dashboardData.price_analytics.highest_price.toFixed(2) }} 元/kg
-                  </a-descriptions-item>
-                  <a-descriptions-item label="最低价格">
-                    {{ dashboardData.price_analytics.lowest_price.toFixed(2) }} 元/kg
-                  </a-descriptions-item>
-                  <a-descriptions-item label="价格趋势">
-                    <a-tag :color="getPriceTrendColor(dashboardData.price_analytics.price_trend)">
-                      {{ getPriceTrendText(dashboardData.price_analytics.price_trend) }}
-                    </a-tag>
-                  </a-descriptions-item>
-                  <a-descriptions-item label="价格变化百分比">
-                    <span
-                      :style="{
-                        color: getPriceChangeColor(
-                          dashboardData.price_analytics.price_change_percentage,
-                        ),
-                      }"
+                <a-tabs default-active-key="basic">
+                  <a-tab-pane key="basic" tab="基础指标">
+                    <a-descriptions
+                      bordered
+                      :column="{ xxl: 5, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }"
                     >
-                      {{ dashboardData.price_analytics.price_change_percentage > 0 ? '+' : '' }}
-                      {{ dashboardData.price_analytics.price_change_percentage.toFixed(2) }}%
-                    </span>
-                  </a-descriptions-item>
-                </a-descriptions>
+                      <a-descriptions-item label="日期">
+                        {{ formatDate(dashboardData.price_analytics.date) }}
+                      </a-descriptions-item>
+                      <a-descriptions-item label="分析产品数">
+                        {{ dashboardData.price_analytics.total_products }}
+                      </a-descriptions-item>
+                      <a-descriptions-item label="平均价格">
+                        {{ dashboardData.price_analytics.average_price.toFixed(2) }} 元/kg
+                      </a-descriptions-item>
+                      <a-descriptions-item label="最高价格">
+                        {{ dashboardData.price_analytics.highest_price.toFixed(2) }} 元/kg
+                      </a-descriptions-item>
+                      <a-descriptions-item label="最低价格">
+                        {{ dashboardData.price_analytics.lowest_price.toFixed(2) }} 元/kg
+                      </a-descriptions-item>
+                      <a-descriptions-item label="平均日内价差">
+                        {{ dashboardData.price_analytics.avg_daily_spread.toFixed(2) }} 元
+                      </a-descriptions-item>
+                    </a-descriptions>
+                  </a-tab-pane>
+
+                  <a-tab-pane key="trends" tab="价格趋势">
+                    <div class="trends-container">
+                      <div class="trend-item">
+                        <h4>日环比</h4>
+                        <a-tag
+                          :color="getPriceTrendColor(dashboardData.price_analytics.daily_trend)"
+                          style="margin-right: 8px"
+                        >
+                          {{ getPriceTrendText(dashboardData.price_analytics.daily_trend) }}
+                        </a-tag>
+                        <span
+                          :style="{
+                            color: getPriceChangeColor(dashboardData.price_analytics.daily_change),
+                          }"
+                        >
+                          {{ dashboardData.price_analytics.daily_change > 0 ? '+' : '' }}
+                          {{ dashboardData.price_analytics.daily_change.toFixed(2) }}%
+                        </span>
+                      </div>
+
+                      <div class="trend-item">
+                        <h4>周同比</h4>
+                        <a-tag
+                          :color="getPriceTrendColor(dashboardData.price_analytics.weekly_trend)"
+                          style="margin-right: 8px"
+                        >
+                          {{ getPriceTrendText(dashboardData.price_analytics.weekly_trend) }}
+                        </a-tag>
+                        <span
+                          :style="{
+                            color: getPriceChangeColor(dashboardData.price_analytics.weekly_change),
+                          }"
+                        >
+                          {{ dashboardData.price_analytics.weekly_change > 0 ? '+' : '' }}
+                          {{ dashboardData.price_analytics.weekly_change.toFixed(2) }}%
+                        </span>
+                      </div>
+                    </div>
+                  </a-tab-pane>
+
+                  <a-tab-pane
+                    key="volatility"
+                    tab="价格波动"
+                    v-if="dashboardData.price_analytics.price_volatility?.length"
+                  >
+                    <a-table
+                      :dataSource="dashboardData.price_analytics.price_volatility"
+                      :columns="volatilityColumns"
+                      :pagination="false"
+                      size="middle"
+                    />
+                  </a-tab-pane>
+                </a-tabs>
               </div>
             </a-card>
           </a-col>
         </a-row>
 
-        <!-- 管理员仪表盘部分 -->
-        <template v-if="isAdmin && adminData">
-          <a-divider>管理员统计</a-divider>
-
-          <a-row :gutter="16">
-            <a-col :span="8">
-              <a-card :bordered="false" title="总用户数" class="stat-card">
-                <p class="large-number">{{ adminData.total_users || 0 }}</p>
-              </a-card>
-            </a-col>
-
-            <a-col :span="8">
-              <a-card :bordered="false" title="总蔬菜数据记录" class="stat-card">
-                <p class="large-number">{{ adminData.total_vegetables || 0 }}</p>
-              </a-card>
-            </a-col>
-
-            <a-col :span="8">
-              <a-card :bordered="false" title="总价格记录" class="stat-card">
-                <p class="large-number">{{ adminData.total_price_records || 0 }}</p>
-              </a-card>
-            </a-col>
-          </a-row>
-
-          <!-- 爬虫活动 -->
-          <a-row
-            :gutter="16"
-            class="chart-row"
-            v-if="adminData.recent_crawler_activities && adminData.recent_crawler_activities.length"
-          >
-            <a-col :span="24">
-              <a-card :bordered="false" title="最近爬虫活动">
-                <a-timeline>
-                  <a-timeline-item
-                    v-for="(activity, index) in adminData.recent_crawler_activities || []"
-                    :key="index"
-                    :color="getActivityColor(activity.activity_type || '')"
-                  >
-                    <p>{{ activity.description || '未知活动' }}</p>
-                    <p class="timeline-time">{{ formatDateTime(activity.timestamp || '') }}</p>
-                  </a-timeline-item>
-                </a-timeline>
-              </a-card>
-            </a-col>
-          </a-row>
-
-          <!-- 模型训练状态 -->
-          <a-row :gutter="16" class="chart-row" v-if="adminData && adminData.model_training_status">
-            <a-col :span="12">
-              <a-card :bordered="false" title="模型训练状态">
-                <a-list itemLayout="horizontal" :dataSource="adminData.model_training_status || []">
-                  <template #renderItem="{ item }">
-                    <a-list-item>
-                      <a-list-item-meta
-                        :title="item.model_name"
-                        :description="`精度: ${item.accuracy || '-'} | 状态: ${item.status || '-'}`"
-                      >
-                        <template #avatar>
-                          <a-avatar
-                            icon="robot"
-                            :style="{ backgroundColor: getModelStatusColor(item.status || '') }"
-                          />
-                        </template>
-                      </a-list-item-meta>
-                      <div>
-                        <a-tag color="blue">{{ formatDateTime(item.last_updated || '') }}</a-tag>
-                      </div>
-                    </a-list-item>
-                  </template>
-                </a-list>
-              </a-card>
-            </a-col>
-
-            <!-- 数据更新频率 -->
-            <a-col :span="12">
-              <a-card :bordered="false" title="数据更新频率">
-                <div ref="updateFrequencyChart" class="chart-container"></div>
-              </a-card>
-            </a-col>
-          </a-row>
-        </template>
+        <!-- 最近价格更新 -->
+        <a-row :gutter="[16, 16]" class="chart-row">
+          <a-col :span="24">
+            <a-card :bordered="false" title="最近价格更新" class="data-card">
+              <a-table
+                :dataSource="dashboardData.recent_price_updates || []"
+                :columns="priceUpdateColumns"
+                :pagination="{ pageSize: 5 }"
+                rowKey="vegetable_id"
+                size="middle"
+              />
+            </a-card>
+          </a-col>
+        </a-row>
       </div>
     </a-spin>
   </div>
@@ -207,10 +241,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import * as echarts from 'echarts'
+import 'echarts-wordcloud'
 import { useUserStore } from '@/stores/user'
 import { getDashboardByUserType, isAdminDashboard } from '@/api/dashboard'
 import type { UserDashboard, AdminDashboard } from '@/types/dashboard'
 import { UserType } from '@/types/user'
+import { ShoppingOutlined } from '@ant-design/icons-vue'
+import { useRouter } from 'vue-router'
+
+// 路由
+const router = useRouter()
 
 // 状态
 const userStore = useUserStore()
@@ -260,6 +300,68 @@ const priceUpdateColumns = [
   },
 ]
 
+// 价格波动表格列定义
+const volatilityColumns = [
+  {
+    title: '产品',
+    dataIndex: 'product',
+    key: 'product',
+  },
+  {
+    title: '价格波动范围',
+    dataIndex: 'spread',
+    key: 'spread',
+    customRender: ({ text }: { text: number }) => `${text.toFixed(2)} 元`,
+  },
+]
+
+// 产地溢价表格列定义
+const originColumns = [
+  {
+    title: '产地',
+    dataIndex: 'origin',
+    key: 'origin',
+  },
+  {
+    title: '平均价格',
+    dataIndex: 'avg_price',
+    key: 'avg_price',
+    customRender: ({ text }: { text: number }) => `${text.toFixed(2)} 元/kg`,
+  },
+  {
+    title: '数据点数',
+    dataIndex: 'data_points',
+    key: 'data_points',
+  },
+]
+
+// 价格异常表格列定义
+const anomalyColumns = [
+  {
+    title: '产品',
+    dataIndex: 'product',
+    key: 'product',
+  },
+  {
+    title: '预期价格',
+    dataIndex: 'expected_price',
+    key: 'expected_price',
+    customRender: ({ text }: { text: number }) => `${text.toFixed(2)} 元/kg`,
+  },
+  {
+    title: '实际价格',
+    dataIndex: 'actual_price',
+    key: 'actual_price',
+    customRender: ({ text }: { text: number }) => `${text.toFixed(2)} 元/kg`,
+  },
+  {
+    title: '偏差比例',
+    dataIndex: 'deviation_percent',
+    key: 'deviation_percent',
+    customRender: ({ text }: { text: number }) => `${text.toFixed(2)}%`,
+  },
+]
+
 // 获取仪表盘数据
 const fetchDashboardData = async () => {
   loading.value = true
@@ -299,6 +401,12 @@ const fetchDashboardData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 手动刷新仪表盘
+const refreshDashboard = () => {
+  message.info('正在刷新数据...')
+  fetchDashboardData()
 }
 
 // 辅助函数
@@ -364,6 +472,12 @@ const formatDateTime = (dateTimeStr: string) => {
     ' ' +
     date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   )
+}
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleDateString()
 }
 
 // 初始化蔬菜类型图表
@@ -478,39 +592,81 @@ const initProvenanceChart = () => {
     const chartInstance = echarts.init(chartDOM)
     console.log('产地数据:', dashboardData.value.provenances)
 
-    // 只取前7个产地，避免图表过于拥挤
-    const data = dashboardData.value.provenances.slice(0, 7).map((item) => ({
-      name: item.provenance,
-      value: item.count,
-    }))
+    // 将数据转换为词云所需的格式
+    let data = []
+
+    // 检查是否已经是新格式 (有text字段)
+    if (dashboardData.value.provenances.length > 0 && 'text' in dashboardData.value.provenances[0]) {
+      data = dashboardData.value.provenances.map((item) => ({
+        name: item.text,
+        value: item.value,
+        // 使用weight作为字体大小的基础
+        textSize: item.weight
+      }))
+    } else {
+      // 向后兼容：将旧格式转换为新格式
+      // 找出最大计数以计算相对权重
+      const provenanceData = dashboardData.value.provenances || []
+      const maxCount = Math.max(...provenanceData.map((p: any) => p.count || 0), 1)
+
+      data = provenanceData.map((item: any) => {
+        const weight = Math.floor((item.count / maxCount) * 100)
+        return {
+          name: item.provenance, // 旧的字段名
+          value: item.count,
+          textSize: weight
+        }
+      })
+    }
 
     const option = {
       tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow',
+        show: true,
+        formatter: (params: any) => {
+          return `${params.name}: ${params.value} 个蔬菜`
+        }
+      },
+      series: [{
+        type: 'wordCloud',
+        shape: 'circle',
+        // 词云大小设置
+        left: 'center',
+        right: 'center',
+        top: 'center',
+        bottom: 'center',
+        width: '90%',
+        height: '90%',
+        // 词云样式设置
+        textStyle: {
+          fontFamily: 'sans-serif',
+          fontWeight: 'bold',
+          color: function() {
+            // 随机生成柔和的颜色
+            return 'rgb(' +
+              Math.round(155 + Math.random() * 100) + ',' +
+              Math.round(155 + Math.random() * 100) + ',' +
+              Math.round(155 + Math.random() * 100) + ')'
+          }
         },
-      },
-      grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        containLabel: true,
-      },
-      xAxis: {
-        type: 'value',
-      },
-      yAxis: {
-        type: 'category',
-        data: data.map((item) => item.name),
-      },
-      series: [
-        {
-          name: '蔬菜数量',
-          type: 'bar',
-          data: data.map((item) => item.value),
+        emphasis: {
+          focus: 'self',
+          textStyle: {
+            shadowBlur: 10,
+            shadowColor: '#333'
+          }
         },
-      ],
+        // 词云大小范围设置
+        sizeRange: [14, 50],
+        // 词之间的间距
+        textPadding: 0,
+        // 布局算法迭代次数，改善碰撞检测
+        layoutAnimation: true,
+        // 使用螺旋状排列
+        drawOutOfBound: false,
+        gridSize: 8,
+        // 数据
+        data: data
+      }]
     }
 
     chartInstance.setOption(option)
@@ -565,6 +721,12 @@ const initUpdateFrequencyChart = () => {
     chartInstance.resize()
   })
 }
+
+// 导航到蔬菜详情页面
+const navigateToVegetableDetail = (vegetableId: number) => {
+  router.push(`/vegetables/${vegetableId}`)
+}
+
 // 生命周期钩子
 onMounted(() => {
   console.log('组件挂载，开始获取数据')
@@ -575,12 +737,15 @@ onMounted(() => {
 <style scoped>
 .dashboard-container {
   padding: 20px;
+  background-color: #f0f2f5;
+  min-height: 100vh;
 }
 
 .dashboard-header {
   margin-bottom: 24px;
   background: #fff;
-  border-radius: 2px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-content {
@@ -588,11 +753,53 @@ onMounted(() => {
 }
 
 .chart-row {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
+/* 基础卡片样式 */
 .stat-card {
   text-align: center;
+  transition: all 0.3s;
+  height: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* 高亮卡片样式 */
+.highlight-card {
+  border-left: 3px solid #52c41a;
+}
+
+.chart-card,
+.data-card,
+.analysis-card {
+  height: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.chart-card:hover,
+.data-card:hover,
+.analysis-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admin-card {
+  border-left: 3px solid #1890ff;
+}
+
+.admin-data-card {
+  height: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.admin-data-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .large-number {
@@ -613,12 +820,36 @@ onMounted(() => {
 }
 
 .price-analytics {
-  margin-top: 16px;
+  margin-top: 8px;
+}
+
+.trends-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 16px;
+}
+
+.trend-item {
+  min-width: 200px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.trend-item h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: rgba(0, 0, 0, 0.85);
 }
 
 .error-message {
   padding: 24px;
   text-align: center;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .retry-button {
@@ -628,5 +859,36 @@ onMounted(() => {
 .timeline-time {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.45);
+}
+
+.stat-vegetable {
+  text-align: center;
+  padding: 0 10px;
+}
+
+.vegetable-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1890ff;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vegetable-price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #52c41a;
+  margin-bottom: 8px;
+}
+
+.vegetable-action {
+  margin-top: 12px;
+}
+
+/* 分隔线样式 */
+.ant-divider {
+  margin: 24px 0 16px;
 }
 </style>

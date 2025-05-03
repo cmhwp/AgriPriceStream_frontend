@@ -4,6 +4,9 @@ import type {
   ModelTrainingHistoryResponse,
   BestPurchaseDayResponse,
   TrainingConfig,
+  ModelEvaluationListResponse,
+  ModelEvaluationDetailResponse,
+  ModelEvaluationFilter
 } from '@/types/prediction'
 
 /**
@@ -87,4 +90,24 @@ export function getTrainingHistory(params?: {
  */
 export function getTrainingDetails(trainingId: number) {
   return request.get<any>(`/predictions/training/${trainingId}`)
+}
+
+/**
+ * 获取模型评估列表（分页）
+ * @param params 过滤和分页参数
+ * @returns 模型评估分页列表
+ */
+export function getModelEvaluations(params?: ModelEvaluationFilter) {
+  return request.get<ModelEvaluationListResponse>('/predictions/evaluations', {
+    params,
+  })
+}
+
+/**
+ * 获取模型评估详情
+ * @param evaluationId 评估ID
+ * @returns 模型评估详情
+ */
+export function getModelEvaluationDetail(evaluationId: number) {
+  return request.get<ModelEvaluationDetailResponse>(`/predictions/evaluations/${evaluationId}`)
 }

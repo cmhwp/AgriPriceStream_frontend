@@ -1,6 +1,6 @@
 <template>
-  <div class="edit-vegetable-container">
-    <a-page-header :title="isEdit ? '编辑蔬菜' : '新增蔬菜'" @back="goBack" />
+  <div class="create-vegetable-container">
+    <a-page-header title="添加蔬菜" @back="goBack" />
 
     <a-card :bordered="false">
       <a-spin :spinning="loading">
@@ -131,7 +131,7 @@
 
           <a-form-item :wrapper-col="{ offset: 4, span: 16 }">
             <a-space>
-              <a-button type="primary" @click="onSubmit" :loading="submitting"> 保存 </a-button>
+              <a-button type="primary" @click="onSubmit" :loading="submitting">保存</a-button>
               <a-button @click="goBack">取消</a-button>
             </a-space>
           </a-form-item>
@@ -142,29 +142,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import type { FormInstance } from 'ant-design-vue'
-import {
-  getVegetableById,
-  createVegetable,
-  updateVegetable,
-  getVegetableKinds,
-  getVegetableProvenances,
-} from '@/api/vegetable'
-import type { VegetableCreate, VegetableUpdate } from '@/types/vegetable'
+import { createVegetable, getVegetableKinds, getVegetableProvenances } from '@/api/vegetable'
+import type { VegetableCreate } from '@/types/vegetable'
 
 // 路由
-const route = useRoute()
 const router = useRouter()
-const vegetableId = computed(() => {
-  const id = route.params.id
-  return id ? Number(id) : null
-})
-
-// 是否为编辑模式
-const isEdit = computed(() => !!vegetableId.value)
 
 // 表单和加载状态
 const formRef = ref<FormInstance>()
@@ -178,11 +164,11 @@ const kinds = ref<string[]>([])
 const provenances = ref<string[]>([])
 
 // 表单状态
-const formState = reactive<VegetableCreate & VegetableUpdate>({
+const formState = reactive<VegetableCreate>({
   product_name: '',
   description: '',
   provenance_name: '',
-  kind: '',
+  kind: '1',
   standard: '',
   weight: undefined,
   top_price: undefined,
@@ -196,9 +182,7 @@ const rules = {
     { required: true, message: '请输入蔬菜名称', trigger: 'blur' },
     { min: 1, max: 100, message: '名称长度应在1-100个字符之间', trigger: 'blur' },
   ],
-  provenance_name: [
-    { required: isEdit.value ? false : true, message: '请选择产地', trigger: 'change' },
-  ],
+  provenance_name: [{ required: true, message: '请选择产地', trigger: 'change' }],
   top_price: [{ type: 'number', message: '价格必须为数字', trigger: 'blur' }],
   minimum_price: [{ type: 'number', message: '价格必须为数字', trigger: 'blur' }],
   average_price: [{ type: 'number', message: '价格必须为数字', trigger: 'blur' }],
@@ -241,82 +225,46 @@ const fetchVegetableProvenances = async () => {
   }
 }
 
-// 获取蔬菜详情(编辑模式)
-const fetchVegetableDetail = async () => {
-  if (!vegetableId.value) return
-
-  loading.value = true
-  try {
-    const res = await getVegetableById(vegetableId.value)
-    if (res.code === 0 || res.code === 200) {
-      const data = res.data
-      // 更新表单数据
-      Object.keys(formState).forEach((key) => {
-        if (key in data) {
-          // @ts-ignore
-          formState[key] = data[key]
-        }
-      })
-    } else {
-      message.error(res.msg || '获取蔬菜详情失败')
-    }
-  } catch (error) {
-    console.error('获取蔬菜详情失败:', error)
-    message.error('获取蔬菜详情失败')
-  } finally {
-    loading.value = false
-  }
-}
-
 // 提交表单
 const onSubmit = async () => {
   try {
+    // 表单验证
     await formRef.value?.validate()
 
     submitting.value = true
-    let res
 
-    if (isEdit.value && vegetableId.value) {
-      // 编辑模式
-      res = await updateVegetable(vegetableId.value, formState as VegetableUpdate)
-    } else {
-      // 新增模式
-      res = await createVegetable(formState as VegetableCreate)
-    }
+    // 创建蔬菜
+    const res = await createVegetable(formState)
 
     if (res.code === 0 || res.code === 200) {
-      message.success(isEdit.value ? '蔬菜更新成功' : '蔬菜创建成功')
+      message.success('添加蔬菜成功')
+      // 跳转到蔬菜列表页
       router.push('/vegetables')
     } else {
-      message.error(res.msg || (isEdit.value ? '更新蔬菜失败' : '创建蔬菜失败'))
+      message.error(res.msg || '添加蔬菜失败')
     }
   } catch (error) {
-    console.error(isEdit.value ? '更新蔬菜失败:' : '创建蔬菜失败:', error)
-    message.error(isEdit.value ? '更新蔬菜失败' : '创建蔬菜失败')
+    console.error('表单提交失败:', error)
+    // 表单验证错误不用提示，会自动显示
   } finally {
     submitting.value = false
   }
 }
 
-// 返回列表页
+// 返回上一页
 const goBack = () => {
-  router.push('/vegetables')
+  router.back()
 }
 
-// 组件初始化
-onMounted(async () => {
-  // 获取下拉选项数据
-  await Promise.all([fetchVegetableKinds(), fetchVegetableProvenances()])
-
-  // 如果是编辑模式，加载蔬菜详情
-  if (isEdit.value) {
-    fetchVegetableDetail()
-  }
+// 组件挂载时加载数据
+onMounted(() => {
+  fetchVegetableKinds()
+  fetchVegetableProvenances()
 })
 </script>
 
 <style scoped>
-.edit-vegetable-container {
-  padding: 0 16px;
+.create-vegetable-container {
+  padding: 24px;
 }
 </style>

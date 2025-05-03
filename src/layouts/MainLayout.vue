@@ -23,26 +23,17 @@
         <!-- 共用菜单项 -->
         <a-menu-item key="dashboard">
           <dashboard-outlined />
-          <span>价格概览</span>
+          <span>数据总览</span>
         </a-menu-item>
         <a-menu-item key="vegetables">
           <shopping-outlined />
           <span>农产品列表</span>
-        </a-menu-item>
-        <a-menu-item key="prices">
-          <line-chart-outlined />
-          <span>价格趋势</span>
         </a-menu-item>
         <!-- 基本用户菜单项 -->
         <a-menu-item key="predictions">
           <fund-outlined />
           <span>价格预测</span>
         </a-menu-item>
-        <a-menu-item key="alerts">
-          <alert-outlined />
-          <span>价格预警</span>
-        </a-menu-item>
-
         <!-- 管理员专用菜单项 -->
         <template v-if="isAdmin">
           <a-menu-item key="users">
@@ -61,20 +52,9 @@
             <thunderbolt-outlined />
             <span>模型训练管理</span>
           </a-menu-item>
-          <a-sub-menu key="data-tools">
-            <template #title>
-              <span>  
-                <tool-outlined />
-                <span>数据工具</span>
-              </span>
-            </template>
-            <a-menu-item key="data-import">数据导入</a-menu-item>
-            <a-menu-item key="data-export">数据导出</a-menu-item>
-            <a-menu-item key="data-correction">数据校正</a-menu-item>
-          </a-sub-menu>
-          <a-menu-item key="system">
-            <setting-outlined />
-            <span>系统设置</span>
+          <a-menu-item key="model-evaluations">
+            <line-chart-outlined />
+            <span>模型评估记录</span>
           </a-menu-item>
         </template>
       </a-menu>
@@ -106,14 +86,6 @@
           <span style="font-size: 18px; font-weight: bold">{{ currentPageTitle }}</span>
         </div>
         <div style="display: flex; align-items: center">
-          <a-badge :count="unreadCount" :dot="unreadCount > 0">
-            <a-button shape="circle" @click="showNotifications = true">
-              <template #icon>
-                <bell-outlined />
-              </template>
-            </a-button>
-          </a-badge>
-
           <a-popover placement="bottomRight" trigger="click">
             <template #content>
               <a-menu style="border: none; width: 160px">
@@ -175,21 +147,11 @@
         农产品价格追踪系统 ©2023 创新型农产品价格监测与预测平台
       </a-layout-footer>
     </a-layout>
-
-    <!-- 通知抽屉组件 -->
-    <notification-drawer
-      v-model:open="showNotifications"
-      :loading="loading"
-      :notifications="notifications"
-      @mark-read="handleMarkAsRead"
-      @mark-all-read="handleMarkAllAsRead"
-      @delete="handleDeleteNotification"
-    />
   </a-layout>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import {
@@ -197,25 +159,17 @@ import {
   ShoppingOutlined,
   LineChartOutlined,
   FundOutlined,
-  AlertOutlined,
-  ToolOutlined,
   UserOutlined,
   LogoutOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
-  BellOutlined,
   TeamOutlined,
-  ExperimentOutlined,
-  SettingOutlined,
   BugOutlined,
   FileTextOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { useNotificationService } from '@/services/notification'
-import type { Notification } from '@/services/notification'
 import { UserType } from '@/types/user'
-import NotificationDrawer from '@/components/NotificationDrawer.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -226,13 +180,6 @@ const userName = computed(() => userStore.userInfo?.username || '用户')
 
 // 用户角色判断
 const isAdmin = computed(() => userStore.userInfo?.user_type === UserType.ADMIN)
-
-// 通知相关
-const showNotifications = ref<boolean>(false)
-const notificationService = useNotificationService()
-const notifications = ref<Notification[]>([])
-const unreadCount = ref<number>(0)
-const loading = ref<boolean>(false)
 
 // 计算当前页面标题
 const currentPageTitle = computed(() => {
@@ -245,19 +192,13 @@ const currentPageTitle = computed(() => {
   const path = route.path
 
   if (path === '/dashboard') {
-    return '价格概览'
+    return '数据总览'
   } else if (path.includes('/vegetables')) {
     return '农产品列表'
-  } else if (path.includes('/prices')) {
-    return '价格趋势'
   } else if (path.includes('/admin/price-records')) {
     return '价格记录管理'
   } else if (path.includes('/predictions')) {
     return '价格预测'
-  } else if (path.includes('/alerts')) {
-    return '价格预警'
-  } else if (path.includes('/reports')) {
-    return '报表中心'
   } else if (path.includes('/models')) {
     return '模型训练'
   } else if (path.includes('/users')) {
@@ -266,19 +207,12 @@ const currentPageTitle = computed(() => {
     return '模型预测管理'
   } else if (path.includes('model-training')) {
     return '模型训练管理'
-  } else if (path.includes('/data-import')) {
-    return '数据导入'
-  } else if (path.includes('/data-export')) {
-    return '数据导出'
-  } else if (path.includes('/data-correction')) {
-    return '数据校正'
-  } else if (path.includes('/system')) {
-    return '系统设置'
+  } else if (path.includes('model-evaluations')) {
+    return '模型评估记录'
   } else if (path.includes('/profile')) {
     return '个人资料'
   }
-
-  return '价格概览'
+  return '数据总览'
 })
 
 // 处理菜单选择
@@ -292,20 +226,11 @@ const handleMenuSelect = ({ key }: { key: string }) => {
     case 'vegetables':
       router.push('/vegetables')
       break
-    case 'prices':
-      router.push('/prices')
-      break
     case 'predictions':
       router.push('/predictions')
       break
-    case 'alerts':
-      router.push('/alerts')
-      break
     case 'price-records':
       router.push('/admin/price-records')
-      break
-    case 'reports':
-      router.push('/reports')
       break
     case 'predict-model':
       router.push('/admin/predict-model')
@@ -313,23 +238,14 @@ const handleMenuSelect = ({ key }: { key: string }) => {
     case 'model-training':
       router.push('/admin/model-training')
       break
+    case 'model-evaluations':
+      router.push('/admin/model-evaluations')
+      break
     case 'users':
       router.push('/admin/users')
       break
     case 'crawler':
       router.push('/admin/crawler')
-      break
-    case 'data-import':
-      router.push('/data-import')
-      break
-    case 'data-export':
-      router.push('/data-export')
-      break
-    case 'data-correction':
-      router.push('/data-correction')
-      break
-    case 'system':
-      router.push('/admin/settings')
       break
     case 'profile':
       router.push('/profile')
@@ -344,29 +260,6 @@ const handleLogout = async () => {
   router.push('/auth/login')
 }
 
-// 处理通知相关事件
-const handleMarkAsRead = async (id: string) => {
-  await notificationService.markAsRead(id)
-  updateLocalNotificationData()
-}
-
-const handleMarkAllAsRead = async () => {
-  await notificationService.markAllAsRead()
-  updateLocalNotificationData()
-}
-
-const handleDeleteNotification = async (id: string) => {
-  await notificationService.deleteNotification(id)
-  updateLocalNotificationData()
-}
-
-// 更新组件中的本地通知数据
-const updateLocalNotificationData = () => {
-  notifications.value = [...notificationService.notifications.value]
-  unreadCount.value = notificationService.unreadCount.value
-  loading.value = notificationService.loadingNotifications.value
-}
-
 // 设置初始选中菜单项
 const setInitialSelectedKey = () => {
   const path = route.path
@@ -376,16 +269,8 @@ const setInitialSelectedKey = () => {
     selectedKeys.value = ['dashboard']
   } else if (path.includes('/vegetables')) {
     selectedKeys.value = ['vegetables']
-  } else if (path.includes('/prices')) {
-    selectedKeys.value = ['prices']
   } else if (path.includes('/predictions')) {
     selectedKeys.value = ['predictions']
-  } else if (path.includes('/alerts')) {
-    selectedKeys.value = ['alerts']
-  } else if (path.includes('/reports')) {
-    selectedKeys.value = ['reports']
-  } else if (path.includes('/models')) {
-    selectedKeys.value = ['models']
   } else if (path.includes('/users')) {
     selectedKeys.value = ['users']
   } else if (path.includes('/price-records')) {
@@ -394,14 +279,8 @@ const setInitialSelectedKey = () => {
     selectedKeys.value = ['predict-model']
   } else if (path.includes('model-training')) {
     selectedKeys.value = ['model-training']
-  } else if (path.includes('/data-import')) {
-    selectedKeys.value = ['data-import']
-  } else if (path.includes('/data-export')) {
-    selectedKeys.value = ['data-export']
-  } else if (path.includes('/data-correction')) {
-    selectedKeys.value = ['data-correction']
-  } else if (path.includes('/system')) {
-    selectedKeys.value = ['system']
+  } else if (path.includes('model-evaluations')) {
+    selectedKeys.value = ['model-evaluations']
   } else if (path.includes('/profile')) {
     selectedKeys.value = ['profile']
   }
@@ -437,41 +316,10 @@ watch(
   },
 )
 
-// 监听通知数据变化
-watch(
-  () => notificationService.notifications.value,
-  () => {
-    updateLocalNotificationData()
-  },
-  { deep: true },
-)
-
-watch(
-  () => notificationService.unreadCount.value,
-  () => {
-    unreadCount.value = notificationService.unreadCount.value
-  },
-)
-
-watch(
-  () => notificationService.loadingNotifications.value,
-  () => {
-    loading.value = notificationService.loadingNotifications.value
-  },
-)
-
 // 组件挂载时初始化
 onMounted(() => {
-  // 初始化通知服务，返回的是清理函数
-  const cleanupNotifications = notificationService.initialize()
-  updateLocalNotificationData()
   setInitialSelectedKey()
   checkPermission()
-
-  // 组件卸载时清理
-  onUnmounted(() => {
-    cleanupNotifications()
-  })
 })
 </script>
 

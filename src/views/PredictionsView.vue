@@ -24,15 +24,6 @@
             :loading="vegetablesLoading"
           />
         </a-form-item>
-        <a-form-item label="预测天数">
-          <a-input-number
-            v-model:value="predictionDays"
-            :min="1"
-            :max="30"
-            style="width: 100px"
-            @change="handleDaysChange"
-          />
-        </a-form-item>
         <a-form-item>
           <a-button type="primary" @click="fetchPrediction" :loading="loading">
             <template #icon><line-chart-outlined /></template>
@@ -50,8 +41,12 @@
       </a-spin>
     </div>
 
-    <div v-else-if="predictionResult && predictionResult.predictions && predictionResult.predictions.length > 0" class="prediction-content">
-
+    <div
+      v-else-if="
+        predictionResult && predictionResult.predictions && predictionResult.predictions.length > 0
+      "
+      class="prediction-content"
+    >
       <!-- 预测结果展示 -->
       <a-row :gutter="16" style="margin-top: 16px">
         <!-- 当前价格卡片 -->
@@ -78,7 +73,9 @@
               title="平均预测价格"
               :value="getAveragePredictedPrice()"
               :precision="2"
-              :value-style="getPriceTrendStyle(predictionResult.current_price, getAveragePredictedPrice())"
+              :value-style="
+                getPriceTrendStyle(predictionResult.current_price, getAveragePredictedPrice())
+              "
               suffix="元/kg"
             >
               <template #prefix>
@@ -132,7 +129,7 @@
         />
 
         <!-- 价格趋势图 -->
-        <div ref="chartRef" style="height: 400px;"></div>
+        <div ref="chartRef" style="height: 400px"></div>
       </a-card>
 
       <!-- 最佳购买日建议 -->
@@ -151,8 +148,9 @@
           </a-descriptions-item>
           <a-descriptions-item label="预计节省">
             <span v-if="bestPurchaseDay.savings">
-              {{ bestPurchaseDay.savings.toFixed(2) }} 元/kg
-              ({{ bestPurchaseDay.savings_percent?.toFixed(2) }}%)
+              {{ bestPurchaseDay.savings.toFixed(2) }} 元/kg ({{
+                bestPurchaseDay.savings_percent?.toFixed(2)
+              }}%)
             </span>
             <span v-else>-</span>
           </a-descriptions-item>
@@ -160,9 +158,7 @@
             <a-tag color="green" v-if="bestPurchaseDay.savings && bestPurchaseDay.savings > 0">
               推荐在建议日期购买
             </a-tag>
-            <a-tag color="blue" v-else>
-              价格稳定，可随时购买
-            </a-tag>
+            <a-tag color="blue" v-else> 价格稳定，可随时购买 </a-tag>
           </a-descriptions-item>
         </a-descriptions>
       </a-card>
@@ -201,7 +197,7 @@ import {
   LineChartOutlined,
   DollarOutlined,
   StockOutlined,
-  CodeOutlined
+  CodeOutlined,
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
@@ -247,8 +243,9 @@ const predictionTableData = computed(() => {
   const currentPrice = predictionResult.value.current_price
   const data = predictionResult.value.predictions.map((pred, index) => {
     // 计算价格变化
-    let prevPrice = index === 0 ? currentPrice : predictionResult.value!.predictions[index - 1].price
-    let change = ((pred.price - prevPrice) / prevPrice) * 100
+    const prevPrice =
+      index === 0 ? currentPrice : predictionResult.value!.predictions[index - 1].price
+    const change = ((pred.price - prevPrice) / prevPrice) * 100
 
     return {
       date: formatDate(pred.date),
@@ -265,11 +262,16 @@ const fetchVegetableOptions = async () => {
   vegetablesLoading.value = true
   try {
     const res = await getVegetableOptions()
-    if (res.code === 0 && res.data) {
-      vegetableOptions.value = res.data.map((v: any) => ({
-        label: v.name,
-        value: v.id
-      }))
+    if ((res.code === 0 || res.code === 200) && res.data) {
+      // 按名称排序
+      const mappedOptions = res.data
+        .map((item: any) => ({
+          label: item.name,
+          value: item.id,
+        }))
+        .sort((a: any, b: any) => a.label.localeCompare(b.label, 'zh-CN'))
+
+      vegetableOptions.value = mappedOptions
     }
   } catch (error) {
     console.error('获取蔬菜选项失败:', error)
@@ -334,8 +336,8 @@ const renderPredictionChart = () => {
 
   chart.value = echarts.init(chartRef.value)
 
-  const dates = predictionResult.value.predictions.map(p => formatDate(p.date))
-  const prices = predictionResult.value.predictions.map(p => p.price)
+  const dates = predictionResult.value.predictions.map((p) => formatDate(p.date))
+  const prices = predictionResult.value.predictions.map((p) => p.price)
 
   // 添加今天的数据点
   const today = dayjs().format('MM-DD')
@@ -345,24 +347,24 @@ const renderPredictionChart = () => {
   const option = {
     tooltip: {
       trigger: 'axis',
-      formatter: function(params: any) {
+      formatter: function (params: any) {
         const date = params[0].axisValue
         const price = params[0].data
         return `${date}: ${price.toFixed(2)} 元/kg`
-      }
+      },
     },
     xAxis: {
       type: 'category',
       data: allDates,
       axisLabel: {
-        formatter: '{value}'
-      }
+        formatter: '{value}',
+      },
     },
     yAxis: {
       type: 'value',
       axisLabel: {
-        formatter: '{value} 元/kg'
-      }
+        formatter: '{value} 元/kg',
+      },
     },
     series: [
       {
@@ -371,33 +373,31 @@ const renderPredictionChart = () => {
         data: allPrices,
         smooth: true,
         lineStyle: {
-          width: 3
+          width: 3,
         },
         markPoint: {
           data: [
             { type: 'max', name: '最高价' },
-            { type: 'min', name: '最低价' }
-          ]
+            { type: 'min', name: '最低价' },
+          ],
         },
         markLine: {
-          data: [
-            { type: 'average', name: '平均价' }
-          ]
+          data: [{ type: 'average', name: '平均价' }],
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             {
               offset: 0,
-              color: 'rgba(58, 71, 212, 0.5)'
+              color: 'rgba(58, 71, 212, 0.5)',
             },
             {
               offset: 1,
-              color: 'rgba(58, 71, 212, 0.1)'
-            }
-          ])
-        }
-      }
-    ]
+              color: 'rgba(58, 71, 212, 0.1)',
+            },
+          ]),
+        },
+      },
+    ],
   }
 
   chart.value.setOption(option)
@@ -410,7 +410,11 @@ const renderPredictionChart = () => {
 
 // 计算平均预测价格
 const getAveragePredictedPrice = () => {
-  if (!predictionResult.value || !predictionResult.value.predictions || predictionResult.value.predictions.length === 0) {
+  if (
+    !predictionResult.value ||
+    !predictionResult.value.predictions ||
+    predictionResult.value.predictions.length === 0
+  ) {
     return 0
   }
 
@@ -423,11 +427,11 @@ const getPriceTrendStyle = (currentPrice: number, predictedPrice: number) => {
   if (!currentPrice || !predictedPrice) return { color: '#1890ff' }
 
   if (predictedPrice > currentPrice) {
-    return { color: '#cf1322' }  // 上涨为红色
+    return { color: '#cf1322' } // 上涨为红色
   } else if (predictedPrice < currentPrice) {
-    return { color: '#3f8600' }  // 下跌为绿色
+    return { color: '#3f8600' } // 下跌为绿色
   } else {
-    return { color: '#1890ff' }  // 不变为蓝色
+    return { color: '#1890ff' } // 不变为蓝色
   }
 }
 
@@ -446,21 +450,25 @@ const formatPriceChange = (change: number) => {
 
 // 获取价格趋势
 const getPriceTrend = () => {
-  if (!predictionResult.value || !predictionResult.value.predictions || predictionResult.value.predictions.length < 2) {
+  if (
+    !predictionResult.value ||
+    !predictionResult.value.predictions ||
+    predictionResult.value.predictions.length < 2
+  ) {
     return 'stable'
   }
 
-  const prices = predictionResult.value.predictions.map(p => p.price)
+  const prices = predictionResult.value.predictions.map((p) => p.price)
   const firstPrice = prices[0]
   const lastPrice = prices[prices.length - 1]
 
   // 计算总体趋势
   if (lastPrice > firstPrice * 1.05) {
-    return 'rise'  // 上涨超过5%
+    return 'rise' // 上涨超过5%
   } else if (lastPrice < firstPrice * 0.95) {
-    return 'fall'  // 下跌超过5%
+    return 'fall' // 下跌超过5%
   } else {
-    return 'stable'  // 总体稳定
+    return 'stable' // 总体稳定
   }
 }
 
@@ -511,11 +519,14 @@ const handleResize = () => {
 }
 
 // 组件卸载时清理图表
-watch(() => chart.value, (curr, prev) => {
-  if (prev) {
-    window.removeEventListener('resize', handleResize)
-  }
-})
+watch(
+  () => chart.value,
+  (curr, prev) => {
+    if (prev) {
+      window.removeEventListener('resize', handleResize)
+    }
+  },
+)
 </script>
 
 <style scoped>
