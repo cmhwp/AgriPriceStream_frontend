@@ -173,8 +173,7 @@ const onFinishFailed = (errorInfo: any) => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f0f2f5;
-  background-image: linear-gradient(120deg, #e0f7fa 0%, #f9fbe7 100%);
+
 }
 
 .system-title {

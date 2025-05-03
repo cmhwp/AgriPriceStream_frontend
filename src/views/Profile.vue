@@ -1,26 +1,14 @@
 <template>
   <div class="profile-container">
-    <a-layout>
-      <a-layout-header class="header">
-        <div class="logo">农产品价格追踪系统</div>
-        <div class="user-info">
-          <a-dropdown>
-            <a class="user-dropdown" @click.prevent>
-              {{ userStore.userInfo?.username }}
-              <down-outlined />
-            </a>
-            <template #overlay>
-              <a-menu>
-                <a-menu-item key="dashboard">
-                  <router-link to="/dashboard">返回首页</router-link>
-                </a-menu-item>
-                <a-menu-item key="logout" @click="handleLogout"> 退出登录 </a-menu-item>
-              </a-menu>
+    <a-page-header title="个人设置" sub-title="查看和修改您的个人信息">
+      <template #extra>
+        <a-button @click="router.push('/dashboard')">
+          <template #icon><arrow-left-outlined /></template>
+          返回首页
+        </a-button>
             </template>
-          </a-dropdown>
-        </div>
-      </a-layout-header>
-      <a-layout-content style="padding: 24px; min-height: calc(100vh - 64px)">
+    </a-page-header>
+
         <a-card title="个人信息" class="profile-card">
           <a-tabs default-active-key="info">
             <a-tab-pane key="info" tab="基本信息">
@@ -29,11 +17,16 @@
                   {{ userStore.userInfo?.username }}
                 </a-descriptions-item>
                 <a-descriptions-item label="用户类型">
+              <a-tag :color="userStore.userInfo?.user_type === 'admin' ? 'blue' : 'green'">
                   {{ userStore.userInfo?.user_type === 'admin' ? '管理员' : '普通用户' }}
+              </a-tag>
                 </a-descriptions-item>
                 <a-descriptions-item label="注册时间">
                   {{ formatDate(userStore.userInfo?.created_at) }}
                 </a-descriptions-item>
+            <a-descriptions-item label="账户状态">
+              <a-badge status="success" text="正常" />
+            </a-descriptions-item>
               </a-descriptions>
             </a-tab-pane>
             <a-tab-pane key="password" tab="修改密码">
@@ -70,22 +63,27 @@
             </a-tab-pane>
           </a-tabs>
         </a-card>
-      </a-layout-content>
-    </a-layout>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { DownOutlined } from '@ant-design/icons-vue'
+import { ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import type { PasswordChange } from '@/types'
+import type { ChangePasswordParams } from '@/types/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
+
+// 组件挂载时获取用户信息
+onMounted(async () => {
+  if (!userStore.userInfo) {
+    await userStore.getUserInfo()
+  }
+})
 
 // 格式化日期
 const formatDate = (dateString?: string) => {
@@ -95,7 +93,7 @@ const formatDate = (dateString?: string) => {
 }
 
 // 密码表单
-const passwordForm = reactive<PasswordChange>({
+const passwordForm = reactive<ChangePasswordParams>({
   current_password: '',
   new_password: '',
   confirm_password: '',
@@ -131,6 +129,7 @@ const handlePasswordChange = async () => {
       passwordForm.current_password = ''
       passwordForm.new_password = ''
       passwordForm.confirm_password = ''
+      message.success('密码修改成功')
     }
   } catch (error) {
     console.error('修改密码失败:', error)
@@ -138,45 +137,15 @@ const handlePasswordChange = async () => {
     loading.value = false
   }
 }
-
-// 退出登录
-const handleLogout = async () => {
-  await userStore.logout()
-  message.success('退出成功')
-  router.push('/auth/login')
-}
 </script>
 
 <style scoped>
 .profile-container {
-  min-height: 100vh;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #001529;
-  padding: 0 20px;
-}
-
-.logo {
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.user-info {
-  color: white;
-}
-
-.user-dropdown {
-  color: white;
-  cursor: pointer;
+  padding: 0 16px;
 }
 
 .profile-card {
   max-width: 800px;
-  margin: 0 auto;
+  margin: 16px auto;
 }
 </style>

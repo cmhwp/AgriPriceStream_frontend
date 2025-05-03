@@ -1,6 +1,5 @@
 import request from '@/utils/request'
 import type { UserAdminUpdateParams } from '@/types/user'
-import type { CrawlerActivityResponse } from '@/types/dashboard'
 /**
  * 管理员更新用户信息
  * @param userId 用户ID

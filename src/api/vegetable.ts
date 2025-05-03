@@ -136,3 +136,31 @@ export const deleteVegetable = async (id: number) => {
     throw error
   }
 }
+
+/**
+ * 根据ID获取蔬菜名称
+ */
+export const getVegetableNameById = async (id: number) => {
+  try {
+    const res = await request.get(`/vegetables/${id}/name`)
+    if (res.code === 0 || res.code === 200) {
+      return res.data.name
+    }
+    return `未知蔬菜(ID:${id})`
+  } catch (error) {
+    console.error(`获取蔬菜名称失败 (ID: ${id}):`, error)
+    return `未知蔬菜(ID:${id})`
+  }
+}
+
+/**
+ * 获取过去一年内的蔬菜选项（不重复）
+ */
+export const getVegetableOptions = async () => {
+  try {
+    return await request.get('/vegetables/options/past-year')
+  } catch (error) {
+    console.error('获取蔬菜选项失败:', error)
+    throw error
+  }
+}

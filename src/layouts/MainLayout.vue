@@ -33,7 +33,6 @@
           <line-chart-outlined />
           <span>价格趋势</span>
         </a-menu-item>
-
         <!-- 基本用户菜单项 -->
         <a-menu-item key="predictions">
           <fund-outlined />
@@ -46,14 +45,6 @@
 
         <!-- 管理员专用菜单项 -->
         <template v-if="isAdmin">
-          <a-menu-item key="reports">
-            <file-text-outlined />
-            <span>报表中心</span>
-          </a-menu-item>
-          <a-menu-item key="models">
-            <experiment-outlined />
-            <span>模型训练</span>
-          </a-menu-item>
           <a-menu-item key="users">
             <team-outlined />
             <span>用户管理</span>
@@ -62,9 +53,17 @@
             <bug-outlined />
             <span>爬虫管理</span>
           </a-menu-item>
+          <a-menu-item key="price-records">
+            <file-text-outlined />
+            <span>价格记录管理</span>
+          </a-menu-item>
+          <a-menu-item key="model-training">
+            <thunderbolt-outlined />
+            <span>模型训练管理</span>
+          </a-menu-item>
           <a-sub-menu key="data-tools">
             <template #title>
-              <span>
+              <span>  
                 <tool-outlined />
                 <span>数据工具</span>
               </span>
@@ -199,7 +198,6 @@ import {
   LineChartOutlined,
   FundOutlined,
   AlertOutlined,
-  FileTextOutlined,
   ToolOutlined,
   UserOutlined,
   LogoutOutlined,
@@ -210,6 +208,8 @@ import {
   ExperimentOutlined,
   SettingOutlined,
   BugOutlined,
+  FileTextOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationService } from '@/services/notification'
@@ -250,6 +250,8 @@ const currentPageTitle = computed(() => {
     return '农产品列表'
   } else if (path.includes('/prices')) {
     return '价格趋势'
+  } else if (path.includes('/admin/price-records')) {
+    return '价格记录管理'
   } else if (path.includes('/predictions')) {
     return '价格预测'
   } else if (path.includes('/alerts')) {
@@ -260,6 +262,10 @@ const currentPageTitle = computed(() => {
     return '模型训练'
   } else if (path.includes('/users')) {
     return '用户管理'
+  } else if (path.includes('predict-model')) {
+    return '模型预测管理'
+  } else if (path.includes('model-training')) {
+    return '模型训练管理'
   } else if (path.includes('/data-import')) {
     return '数据导入'
   } else if (path.includes('/data-export')) {
@@ -295,11 +301,17 @@ const handleMenuSelect = ({ key }: { key: string }) => {
     case 'alerts':
       router.push('/alerts')
       break
+    case 'price-records':
+      router.push('/admin/price-records')
+      break
     case 'reports':
       router.push('/reports')
       break
-    case 'models':
-      router.push('/models')
+    case 'predict-model':
+      router.push('/admin/predict-model')
+      break
+    case 'model-training':
+      router.push('/admin/model-training')
       break
     case 'users':
       router.push('/admin/users')
@@ -376,6 +388,12 @@ const setInitialSelectedKey = () => {
     selectedKeys.value = ['models']
   } else if (path.includes('/users')) {
     selectedKeys.value = ['users']
+  } else if (path.includes('/price-records')) {
+    selectedKeys.value = ['price-records']
+  } else if (path.includes('predict-model')) {
+    selectedKeys.value = ['predict-model']
+  } else if (path.includes('model-training')) {
+    selectedKeys.value = ['model-training']
   } else if (path.includes('/data-import')) {
     selectedKeys.value = ['data-import']
   } else if (path.includes('/data-export')) {

@@ -51,6 +51,17 @@ const router = createRouter({
           component: () => import('@/views/VegetableDetail.vue'),
           meta: { title: '蔬菜详情' },
         },
+        {
+          path: 'predictions',
+          name: 'PricePrediction',
+          component: () => import('@/views/PricePrediction.vue'),
+          meta: { title: '价格预测' },
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: ()=>import('@/views/Profile.vue')
+        }
       ],
     },
     {
@@ -69,6 +80,18 @@ const router = createRouter({
           name: 'UserManagement',
           component: () => import('@/views/UserManagement.vue'),
           meta: { title: '用户管理', requiresAdmin: true },
+        },
+        {
+          path: 'price-records',
+          name: 'PriceRecords',
+          component: () => import('@/views/admin/PriceRecords.vue'),
+          meta: { title: '价格记录管理', requiresAdmin: true },
+        },
+        {
+          path: 'model-training',
+          name: 'ModelTraining',
+          component: () => import('@/views/admin/ModelTraining.vue'),
+          meta: { title: '模型训练管理', requiresAdmin: true },
         },
         {
           path: 'settings',
