@@ -202,6 +202,18 @@ const crawlHistorical = async () => {
     return
   }
 
+  // 验证日期范围
+  const today = dayjs()
+  if (historicalForm.startDate.isAfter(today)) {
+    message.error('开始日期不能是未来日期')
+    return
+  }
+
+  if (historicalForm.endDate && historicalForm.endDate.isAfter(today)) {
+    message.error('结束日期不能是未来日期')
+    return
+  }
+
   crawlingHistorical.value = true
   try {
     const startDate = historicalForm.startDate.format('YYYY-MM-DD')
@@ -218,11 +230,11 @@ const crawlHistorical = async () => {
       startPollingCrawlerStatus()
     } else {
       message.error(res.message || '历史数据爬取任务启动失败')
-      crawlingHistorical.value = false
     }
   } catch (error) {
     console.error('爬取历史数据失败:', error)
     message.error('爬取历史数据失败')
+  } finally {
     crawlingHistorical.value = false
   }
 }

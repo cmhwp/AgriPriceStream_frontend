@@ -7,10 +7,6 @@
             <template #icon><user-add-outlined /></template>
             添加用户
           </a-button>
-          <a-button v-if="isSuperAdmin" type="default" @click="goToCreateAdmin">
-            <template #icon><crown-outlined /></template>
-            创建管理员
-          </a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -125,9 +121,11 @@
                     <a-menu-item>
                       <a-popconfirm
                         title="确定要删除此用户吗?"
+                        description="删除后，该用户所有数据将被永久删除且无法恢复"
                         ok-text="确定"
                         cancel-text="取消"
                         @confirm="deleteUser(record)"
+                        :okButtonProps="{ loading: deleteLoading }"
                       >
                         <a style="color: #ff4d4f">删除</a>
                       </a-popconfirm>
@@ -187,6 +185,7 @@ import type {
   UserAdminUpdateParams,
 } from '@/types/user'
 import { getAllUsers, register, getUserById, toggleUserStatus } from '@/api/user'
+import { deleteUser as apiDeleteUser } from '@/api/admin'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 
@@ -194,6 +193,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
 const submitLoading = ref(false)
+const deleteLoading = ref(false)
 const users = ref<UserInfo[]>([])
 const showAddUserModal = ref(false)
 const currentUser = ref<UserInfo | null>(null)
@@ -353,8 +353,22 @@ const resetPassword = (record: UserInfo) => {
 }
 
 // 删除用户
-const deleteUser = (record: UserInfo) => {
-  message.info('该功能尚未实现')
+const deleteUser = async (record: UserInfo) => {
+  deleteLoading.value = true
+  try {
+    const res = await apiDeleteUser(record.id)
+    if (res.code === 0 || res.code === 200) {
+      message.success('用户删除成功')
+      loadUsers() // 重新加载用户列表
+    } else {
+      message.error(res.message || '删除用户失败')
+    }
+  } catch (error) {
+    console.error('删除用户失败:', error)
+    message.error('删除用户失败')
+  } finally {
+    deleteLoading.value = false
+  }
 }
 
 // 取消添加/编辑

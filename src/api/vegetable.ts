@@ -89,6 +89,7 @@ export const getVegetablesByPriceRange = async (
   params: {
     min_price?: number
     max_price?: number
+    name?: string
     page?: number
     page_size?: number
   } = {},

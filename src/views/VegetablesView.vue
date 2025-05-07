@@ -3,16 +3,7 @@
     <a-card class="search-card" title="蔬菜数据查询" :bordered="false">
       <a-form layout="inline" :model="searchForm">
         <a-form-item label="蔬菜名称">
-          <a-select
-            v-model:value="searchForm.name"
-            placeholder="请选择蔬菜"
-            style="width: 200px"
-            :options="vegetableOptions"
-            show-search
-            :filter-option="filterOption"
-            :virtual="false"
-            :max-tag-count="10"
-          />
+          <a-input v-model:value="searchForm.name" placeholder="请输入蔬菜名称" />
         </a-form-item>
         <a-form-item label="价格范围">
           <a-space>
@@ -62,6 +53,21 @@
           </div>
         </div>
       </template>
+
+      <!-- 显示当前过滤条件 -->
+      <div class="active-filters" v-if="hasActiveFilters">
+        <span>当前过滤条件: </span>
+        <a-tag v-if="searchForm.name" closable @close="clearNameFilter">
+          名称: {{ searchForm.name }}
+        </a-tag>
+        <a-tag v-if="searchForm.min_price !== undefined" closable @close="clearMinPriceFilter">
+          最低价: {{ searchForm.min_price }} 元
+        </a-tag>
+        <a-tag v-if="searchForm.max_price !== undefined" closable @close="clearMaxPriceFilter">
+          最高价: {{ searchForm.max_price }} 元
+        </a-tag>
+        <a-button type="link" size="small" @click="resetSearch"> 清除所有过滤条件 </a-button>
+      </div>
 
       <a-table
         :dataSource="vegetables"
@@ -177,10 +183,7 @@ const searchForm = reactive({
   min_price: undefined,
   max_price: undefined,
 })
-// 过滤器 - 搜索蔬菜
-const filterOption = (input: string, option: any) => {
-  return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
-}
+
 // 分页
 const pagination = reactive({
   current: 1,
@@ -258,6 +261,7 @@ const fetchData = async () => {
       res = await getVegetablesByPriceRange({
         min_price: searchForm.min_price,
         max_price: searchForm.max_price,
+        name: searchForm.name || undefined,
         page: pagination.current,
         page_size: pagination.pageSize,
       })
@@ -297,26 +301,32 @@ const handleSearch = () => {
   pagination.current = 1 // 重置到第一页
   fetchData()
 }
-// 获取蔬菜列表
-const fetchVegetables = async () => {
-  try {
-    const res = await getVegetableOptions()
-    if ((res.code === 0 || res.code === 200) && res.data) {
-      // 按名称排序
-      const mappedOptions = res.data
-        .map((item: any) => ({
-          label: item.name,
-          value: item.id,
-        }))
-        .sort((a: any, b: any) => a.label.localeCompare(b.label, 'zh-CN'))
 
-      vegetableOptions.value = mappedOptions
-    }
-  } catch (error) {
-    console.error('获取蔬菜选项失败:', error)
-    message.error('获取蔬菜选项失败')
-  }
+// 计算是否有激活的过滤条件
+const hasActiveFilters = computed(() => {
+  return (
+    searchForm.name !== '' ||
+    searchForm.min_price !== undefined ||
+    searchForm.max_price !== undefined
+  )
+})
+
+// 清除单个过滤条件
+const clearNameFilter = () => {
+  searchForm.name = ''
+  handleSearch()
 }
+
+const clearMinPriceFilter = () => {
+  searchForm.min_price = undefined
+  handleSearch()
+}
+
+const clearMaxPriceFilter = () => {
+  searchForm.max_price = undefined
+  handleSearch()
+}
+
 // 重置搜索条件
 const resetSearch = () => {
   searchForm.name = ''
@@ -377,7 +387,6 @@ const handleDeleteVegetable = async (record: VegetableResponse) => {
 // 组件挂载时加载数据
 onMounted(() => {
   fetchData()
-  fetchVegetables()
 })
 </script>
 
@@ -392,6 +401,14 @@ onMounted(() => {
 
 .data-card {
   margin-bottom: 16px;
+}
+
+.active-filters {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .card-title-with-actions {
