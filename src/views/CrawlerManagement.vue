@@ -342,21 +342,21 @@ onUnmounted(() => {
 
 // 设置默认活动数据
 const setDefaultActivities = () => {
-  lastRunTime.value = '2023-10-25 08:00:00'
+  lastRunTime.value = '2025-10-25 08:00:00'
   dailyDataCount.value = 87
 
   recentActivities.value = [
     {
       title: '每日常规爬取',
       description: '成功获取了32条新数据',
-      time: '2023-10-25 08:00:00',
+      time: '2025-10-25 08:00:00',
       status: 'success',
       records_count: 32,
     },
     {
       title: '价格异常检测',
       description: '发现5条价格异常数据，已标记',
-      time: '2023-10-25 08:01:15',
+      time: '2025-10-25 08:01:15',
       status: 'warning',
       records_count: 5,
     },

@@ -1,26 +1,16 @@
 <template>
-  <a-layout style="min-height: 100vh">
-    <a-layout-sider v-model:collapsed="collapsed" collapsible :trigger="null" width="240">
-      <div
-        class="logo"
-        style="
-          height: 32px;
-          margin: 16px;
-          color: white;
-          font-size: 18px;
-          font-weight: bold;
-          text-align: center;
-        "
-      >
-        农产品价格系统
+  <a-layout class="layout">
+    <a-layout-header class="header">
+      <div class="logo">
+        <div class="logo-text">智农价格通</div>
       </div>
       <a-menu
         v-model:selectedKeys="selectedKeys"
-        theme="dark"
-        mode="inline"
+        theme="light"
+        mode="horizontal"
+        :style="{ lineHeight: '64px' }"
         @select="handleMenuSelect"
       >
-        <!-- 共用菜单项 -->
         <a-menu-item key="dashboard">
           <dashboard-outlined />
           <span>数据总览</span>
@@ -29,7 +19,6 @@
           <shopping-outlined />
           <span>农产品列表</span>
         </a-menu-item>
-        <!-- 基本用户菜单项 -->
         <a-menu-item key="predictions">
           <fund-outlined />
           <span>价格预测</span>
@@ -58,95 +47,69 @@
           </a-menu-item>
         </template>
       </a-menu>
-    </a-layout-sider>
 
-    <a-layout>
-      <a-layout-header
-        style="
-          background: #fff;
-          padding: 0 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        "
-      >
-        <div style="display: flex; align-items: center">
-          <menu-unfold-outlined
-            v-if="collapsed"
-            class="trigger"
-            style="font-size: 18px; cursor: pointer; margin-right: 16px"
-            @click="collapsed = !collapsed"
-          />
-          <menu-fold-outlined
-            v-else
-            class="trigger"
-            style="font-size: 18px; cursor: pointer; margin-right: 16px"
-            @click="collapsed = !collapsed"
-          />
-          <span style="font-size: 18px; font-weight: bold">{{ currentPageTitle }}</span>
-        </div>
-        <div style="display: flex; align-items: center">
-          <a-popover placement="bottomRight" trigger="click">
-            <template #content>
-              <a-menu style="border: none; width: 160px">
-                <a-menu-item key="user-profile" @click="handleMenuSelect({ key: 'profile' })">
-                  <template #icon><user-outlined /></template>
-                  个人设置
-                </a-menu-item>
-                <a-divider style="margin: 4px 0" />
-                <a-menu-item key="user-logout" @click="handleLogout">
-                  <template #icon><logout-outlined /></template>
-                  退出登录
-                </a-menu-item>
-              </a-menu>
-            </template>
-            <div style="margin-left: 16px; display: flex; align-items: center; cursor: pointer">
-              <a-avatar :size="32" style="background-color: #1890ff">
-                {{ userName.charAt(0).toUpperCase() }}
-              </a-avatar>
-              <span style="margin-left: 8px">{{ userName }}</span>
-              <span v-if="isAdmin" style="margin-left: 4px">
-                <a-tag color="red">管理员</a-tag>
-              </span>
-            </div>
-          </a-popover>
-        </div>
-      </a-layout-header>
-
-      <a-layout-content style="margin: 16px">
-        <a-breadcrumb style="margin: 16px 0">
-          <a-breadcrumb-item>
-            <router-link to="/dashboard">首页</router-link>
-          </a-breadcrumb-item>
-
-          <a-breadcrumb-item v-if="route.path !== '/dashboard'">
-            <span
-              v-if="route.path.includes('/vegetable/') || route.path.includes('/edit-vegetable/')"
-            >
-              <router-link to="/vegetables">农产品列表</router-link>
+      <!-- 用户菜单，放在header而不是menu内部 -->
+      <div class="user-menu">
+        <a-popover placement="bottomRight" trigger="click">
+          <template #content>
+            <a-menu style="border: none; width: 160px">
+              <a-menu-item key="user-profile" @click="handleMenuSelect({ key: 'profile' })">
+                <template #icon><user-outlined /></template>
+                个人设置
+              </a-menu-item>
+              <a-divider style="margin: 4px 0" />
+              <a-menu-item key="user-logout" @click="handleLogout">
+                <template #icon><logout-outlined /></template>
+                退出登录
+              </a-menu-item>
+            </a-menu>
+          </template>
+          <div style="display: flex; align-items: center; cursor: pointer; color: #001529">
+            <a-avatar :size="32" style="background-color: #1890ff">
+              {{ userName.charAt(0).toUpperCase() }}
+            </a-avatar>
+            <span style="margin-left: 8px">{{ userName }}</span>
+            <span v-if="isAdmin" style="margin-left: 4px">
+              <a-tag color="red">管理员</a-tag>
             </span>
-            <span v-else>{{ currentPageTitle }}</span>
-          </a-breadcrumb-item>
+          </div>
+        </a-popover>
+      </div>
+    </a-layout-header>
 
-          <a-breadcrumb-item
+    <a-layout-content class="main-content">
+      <a-breadcrumb style="margin: 16px 0">
+        <a-breadcrumb-item>
+          <router-link to="/dashboard">首页</router-link>
+        </a-breadcrumb-item>
+
+        <a-breadcrumb-item v-if="route.path !== '/dashboard'">
+          <span
             v-if="route.path.includes('/vegetable/') || route.path.includes('/edit-vegetable/')"
           >
-            {{ route.path.includes('/edit-vegetable/') ? '编辑农产品' : '农产品详情' }}
-          </a-breadcrumb-item>
-        </a-breadcrumb>
-        <div style="padding: 24px; background: #fff; min-height: 360px">
-          <router-view v-slot="{ Component }">
-            <transition name="fade" mode="out-in">
-              <component :is="Component" />
-            </transition>
-          </router-view>
-        </div>
-      </a-layout-content>
+            <router-link to="/vegetables">农产品列表</router-link>
+          </span>
+          <span v-else>{{ currentPageTitle }}</span>
+        </a-breadcrumb-item>
 
-      <a-layout-footer style="text-align: center">
-        农产品价格追踪系统 ©2023 创新型农产品价格监测与预测平台
-      </a-layout-footer>
-    </a-layout>
+        <a-breadcrumb-item
+          v-if="route.path.includes('/vegetable/') || route.path.includes('/edit-vegetable/')"
+        >
+          {{ route.path.includes('/edit-vegetable/') ? '编辑农产品' : '农产品详情' }}
+        </a-breadcrumb-item>
+      </a-breadcrumb>
+      <div class="content-wrapper">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </div>
+    </a-layout-content>
+
+    <a-layout-footer class="footer">
+      智农价格通 ©2023 创新型农产品价格监测与预测平台
+    </a-layout-footer>
   </a-layout>
 </template>
 
@@ -161,8 +124,6 @@ import {
   FundOutlined,
   UserOutlined,
   LogoutOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
   TeamOutlined,
   BugOutlined,
   FileTextOutlined,
@@ -173,7 +134,6 @@ import { UserType } from '@/types/user'
 
 const router = useRouter()
 const route = useRoute()
-const collapsed = ref<boolean>(false)
 const selectedKeys = ref<string[]>(['dashboard'])
 const userStore = useUserStore()
 const userName = computed(() => userStore.userInfo?.username || '用户')
@@ -324,25 +284,102 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.header {
+  width: 100%;
+  background-image: -moz-linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
+  background-image: -webkit-linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
+  background-image: linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0, 21, 41, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header :deep(.ant-menu) {
+  flex: 1;
+}
+
 .logo {
-  margin: 16px;
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
+  float: left;
+  margin-right: 40px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.logo::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  height: 24px;
+  width: 1px;
+  background: rgba(0, 21, 41, 0.1);
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 22px;
+  background: linear-gradient(to right, #0086e6, #00c3ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px rgba(0, 134, 230, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.user-menu {
+  position: relative;
+  margin-left: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.main-content {
+  padding: 0 50px;
+  flex: 1;
+}
+
+.content-wrapper {
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.8);
+  min-height: 360px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 21, 41, 0.08);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.footer {
   text-align: center;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.trigger {
-  font-size: 18px;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.trigger:hover {
-  color: #1890ff;
+  background-image: -moz-linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
+  background-image: -webkit-linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
+  background-image: linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
+  color: #001529;
+  padding: 24px 50px;
 }
 
 /* 添加过渡动画样式 */

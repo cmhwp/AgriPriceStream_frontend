@@ -1,7 +1,7 @@
 <template>
   <div class="register-container">
     <div class="system-title">
-      <h1>农产品价格追踪系统</h1>
+      <h1>智农价格通</h1>
     </div>
     <a-card title="用户注册" class="register-card">
       <a-form
@@ -123,26 +123,127 @@ const onFinishFailed = (errorInfo: any) => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f0f2f5;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-container::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none"/><path d="M10,30 Q50,15 90,30 T170,30" fill="none" stroke="rgba(163, 240, 255, 0.3)" stroke-width="2" /><path d="M10,40 Q50,25 90,40 T170,40" fill="none" stroke="rgba(163, 240, 255, 0.3)" stroke-width="2" /><path d="M10,50 Q50,35 90,50 T170,50" fill="none" stroke="rgba(163, 240, 255, 0.3)" stroke-width="2" /><path d="M10,60 Q50,45 90,60 T170,60" fill="none" stroke="rgba(163, 240, 255, 0.3)" stroke-width="2" /><path d="M10,70 Q50,55 90,70 T170,70" fill="none" stroke="rgba(163, 240, 255, 0.3)" stroke-width="2" /></svg>')
+    repeat;
+  opacity: 0.3;
+  z-index: -1;
 }
 
 .system-title {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
+  animation: fadeInDown 0.8s ease-out;
 }
 
 .system-title h1 {
-  color: #1890ff;
-  font-size: 28px;
+  color: #0086e6;
+  font-size: 36px;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 4px rgba(0, 134, 230, 0.2);
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
 .register-card {
   width: 400px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  margin-bottom: 30px;
+  overflow: hidden;
+  border: none;
+  animation: fadeIn 1s ease-out;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+:deep(.ant-card-head) {
+  background-image: linear-gradient(135deg, #0086e6, #00c3ff);
+  padding: 16px 24px;
+  border-bottom: none;
+}
+
+:deep(.ant-card-head-title) {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+:deep(.ant-card-body) {
+  padding: 30px 24px;
+}
+
+:deep(.ant-form-item-label > label) {
+  font-weight: 500;
+  color: #444;
+}
+
+:deep(.ant-input),
+:deep(.ant-input-password) {
+  border-radius: 8px;
+  padding: 12px;
+  height: auto;
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s;
+}
+
+:deep(.ant-input:hover),
+:deep(.ant-input-password:hover) {
+  border-color: #00c3ff;
+}
+
+:deep(.ant-input:focus),
+:deep(.ant-input-password:focus),
+:deep(.ant-input-affix-wrapper:focus),
+:deep(.ant-input-affix-wrapper-focused) {
+  border-color: #0086e6;
+  box-shadow: 0 0 0 2px rgba(0, 134, 230, 0.2);
 }
 
 .register-form-footer {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 20px;
+}
+
+.register-form-footer a {
+  color: #0086e6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.register-form-footer a:hover {
+  color: #00c3ff;
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

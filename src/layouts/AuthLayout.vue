@@ -14,10 +14,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f0f2f5;
-  background-image: url('@/assets/login_background.svg');
+  background-image: -moz-linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
+  background-image: -webkit-linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
+  background-image: linear-gradient(0deg, rgb(163, 240, 255), rgb(204, 235, 255));
   background-repeat: no-repeat;
-  background-position: 50%;
-  background-size: 100%;
+  background-position: center;
+  background-size: cover;
 }
 </style>
